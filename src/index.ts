@@ -72,16 +72,19 @@ window.addEventListener('keyup', () => {
 
 let previousObstacleTime = 0
 
+const minCarX = -5 + car.geometry.parameters.width / 2
+const maxCarX = -minCarX
+
 function animation() {
   if (hitDetection()) {
     renderer.setAnimationLoop(null)
   }
 
-  if (performance.now() - previousObstacleTime > 2000) {
+  if (performance.now() - previousObstacleTime > 1000) {
     addObstacle()
   }
 
-  const xMovementPerS = 0.1
+  const xMovementPerS = 0.3
   const yMovementPerS = 50
 
   const delta = clock.getDelta()
@@ -90,13 +93,21 @@ function animation() {
   obstacles.forEach((obs) => {
     obs.position.y -= yMovementPerS * delta
   })
-  car.position.x += xSpeed * xMovementPerS
+
+  const newX = car.position.x + xSpeed * xMovementPerS
+  car.position.x = Math.max(Math.min(newX, maxCarX), minCarX)
+
   renderer.render(scene, camera)
 }
 
 function addObstacle() {
   previousObstacleTime = performance.now()
-  const obstacle = createBox(2, 4, 2)
+
+  const randomWidth = Math.random() * 3 + 2
+  const minLeft = -5 + randomWidth / 2
+  const position = minLeft + randomWidth * Math.random()
+
+  const obstacle = createBox(randomWidth, 2, 2, position)
   obstacle.position.y = initialObstacleY
   scene.add(obstacle)
 
