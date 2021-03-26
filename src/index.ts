@@ -2,7 +2,10 @@ import { partition, range, sample } from 'lodash'
 import {
   AmbientLight,
   BoxGeometry,
+  Color,
   DirectionalLight,
+  Fog,
+  FogExp2,
   Mesh,
   Scene,
   WebGLRenderer,
@@ -17,6 +20,10 @@ import { hitDetection } from './hitDetection'
 import { createTree } from './tree'
 
 const scene = new Scene()
+scene.background = new Color(0xdddddd)
+
+const color = 0xdddddd
+scene.fog = new FogExp2(color, 0.02)
 
 const mapWidth = 500
 const mapHeight = 1000
