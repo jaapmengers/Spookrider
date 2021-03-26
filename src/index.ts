@@ -1,4 +1,4 @@
-import { create, inRange } from 'lodash'
+import { create, inRange, partition } from 'lodash'
 import {
   AmbientLight,
   BoxGeometry,
@@ -27,9 +27,7 @@ scene.add(car)
 
 const initialObstacleY = 200
 
-const obstacle = createBox(2, 4, 2)
-obstacle.position.y = initialObstacleY
-scene.add(obstacle)
+let obstacles: Mesh<BoxGeometry>[] = []
 
 const ambientLight = new AmbientLight(0xffffff, 0.6)
 scene.add(ambientLight)
@@ -49,6 +47,7 @@ const clock = new Clock()
 window.addEventListener('keydown', (event) => {
   if (!gameStarted) {
     clock.reset()
+    addObstacle()
     renderer.setAnimationLoop(animation)
     gameStarted = true
   }
@@ -71,21 +70,51 @@ window.addEventListener('keyup', () => {
   xSpeed = 0
 })
 
+let previousObstacleTime = 0
+
 function animation() {
   if (hitDetection()) {
     renderer.setAnimationLoop(null)
   }
 
+  if (performance.now() - previousObstacleTime > 2000) {
+    addObstacle()
+  }
+
   const xMovementPerS = 0.1
   const yMovementPerS = 50
 
-  obstacle.position.y = initialObstacleY - yMovementPerS * clock.getDelta()
+  const delta = clock.getDelta()
+
+  deleteOldObstacles()
+  obstacles.forEach((obs) => {
+    obs.position.y -= yMovementPerS * delta
+  })
   car.position.x += xSpeed * xMovementPerS
   renderer.render(scene, camera)
 }
 
+function addObstacle() {
+  previousObstacleTime = performance.now()
+  const obstacle = createBox(2, 4, 2)
+  obstacle.position.y = initialObstacleY
+  scene.add(obstacle)
+
+  obstacles.push(obstacle)
+}
+
+function deleteOldObstacles() {
+  const [toBeRemoved, remaining] = partition(
+    obstacles,
+    (obs) => obs.position.y < -100
+  )
+
+  toBeRemoved.forEach((obs) => scene.remove(obs))
+  obstacles = remaining
+}
+
 function hitDetection() {
-  return boundsOverlap(getBounds(car), getBounds(obstacle))
+  return obstacles.some((obs) => boundsOverlap(getBounds(car), getBounds(obs)))
 }
 
 interface Bounds {
@@ -116,8 +145,6 @@ function boundsOverlap(l: Bounds, r: Bounds): boolean {
 function rangesOverlap(l: [number, number], r: [number, number]): boolean {
   const [lMin, lMax] = l
   const [rMin, rMax] = r
-
-  console.log({ l, r })
 
   return (
     inRange(lMin, rMin, rMax) ||
