@@ -1,6 +1,12 @@
-import { AmbientLight, DirectionalLight, Scene, WebGLRenderer } from 'three'
+import {
+  AmbientLight,
+  DirectionalLight,
+  Scene,
+  Vector3,
+  WebGLRenderer,
+} from 'three'
 import { createBox } from './box'
-import { camera, initialCameraPosition } from './camera'
+import { camera } from './camera'
 import { Clock } from './clock'
 import './index.css'
 
@@ -27,24 +33,60 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.render(scene, camera)
 
 let gameStarted = false
+let zSpeed = 0
 const clock = new Clock()
 
-window.addEventListener('click', () => {
+window.addEventListener('keydown', (event) => {
   if (!gameStarted) {
     clock.reset()
     renderer.setAnimationLoop(animation)
     gameStarted = true
-  } else {
+  }
+
+  if (event.key == 'ArrowLeft') {
+    zSpeed = -1
+  }
+
+  if (event.key == 'ArrowRight') {
+    zSpeed = 1
+  }
+
+  if (event.key.toUpperCase() == 'R') {
     renderer.setAnimationLoop(null)
     gameStarted = false
   }
 })
 
-function animation() {
-  const movementPerS = 3
+window.addEventListener('keyup', () => {
+  zSpeed = 0
+})
 
-  obstacle.position.x = initialObstacleX + movementPerS * clock.getDelta()
+function animation() {
+  if (hitDetection()) {
+    renderer.setAnimationLoop(null)
+  }
+
+  const xMovementPerS = 3
+  const zMovementPerS = 0.1
+
+  obstacle.position.x = initialObstacleX + xMovementPerS * clock.getDelta()
+  car.position.z += zSpeed * zMovementPerS
   renderer.render(scene, camera)
+}
+
+function hitDetection() {
+  const lowerX =
+    car.position.x < obstacle.position.x + obstacle.geometry.parameters.width
+  const upperX =
+    car.position.x + car.geometry.parameters.width > obstacle.position.x
+  const lowerZ =
+    car.position.z < obstacle.position.z + obstacle.geometry.parameters.depth
+  const upperZ =
+    car.position.z + car.geometry.parameters.depth > obstacle.position.z
+
+  console.log({ lowerX, upperX, lowerZ, upperZ })
+
+  return lowerX && upperX && lowerZ && upperZ
 }
 
 document.body.append(renderer.domElement)
