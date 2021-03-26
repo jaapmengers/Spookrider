@@ -8,7 +8,7 @@ import {
   WebGLRenderer,
 } from 'three'
 import { createBox } from './box'
-import { camera, cameraHeight, cameraWidth } from './camera'
+import { camera } from './camera'
 import { Clock } from './clock'
 import './index.css'
 import { createPlane } from './plane'
@@ -16,18 +16,18 @@ import { createField } from './field'
 
 const scene = new Scene()
 
-const mapWidth = cameraWidth
-const mapHeight = cameraHeight * 2
+const mapWidth = 500
+const mapHeight = 1000
 
 scene.add(createPlane(mapWidth, mapHeight))
 scene.add(createField(mapWidth, mapHeight))
 
-const car = createBox(3, 5, 2)
+const car = createBox(2, 4, 1)
 scene.add(car)
 
-const initialObstacleY = 30
+const initialObstacleY = 200
 
-const obstacle = createBox(2, 4, 3)
+const obstacle = createBox(2, 4, 2)
 obstacle.position.y = initialObstacleY
 scene.add(obstacle)
 
@@ -77,7 +77,7 @@ function animation() {
   }
 
   const xMovementPerS = 0.1
-  const yMovementPerS = 10
+  const yMovementPerS = 50
 
   obstacle.position.y = initialObstacleY - yMovementPerS * clock.getDelta()
   car.position.x += xSpeed * xMovementPerS
@@ -117,7 +117,14 @@ function rangesOverlap(l: [number, number], r: [number, number]): boolean {
   const [lMin, lMax] = l
   const [rMin, rMax] = r
 
-  return inRange(lMin, rMin, rMax) || inRange(lMax, rMin, rMax)
+  console.log({ l, r })
+
+  return (
+    inRange(lMin, rMin, rMax) ||
+    inRange(lMax, rMin, rMax) ||
+    inRange(rMin, lMin, lMax) ||
+    inRange(rMax, lMin, lMax)
+  )
 }
 
 document.body.append(renderer.domElement)

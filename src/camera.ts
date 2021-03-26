@@ -1,19 +1,12 @@
-import { OrthographicCamera } from 'three'
+import { PerspectiveCamera } from 'three'
 
 const width = 50
 const height = width * (window.innerHeight / window.innerWidth)
 
-const camera = new OrthographicCamera(
-  width / -2,
-  width / 2,
-  height / 2,
-  height / -2,
-  0,
-  1000
-)
+const camera = new PerspectiveCamera(100, 1, 0.1, 2000)
 
-camera.position.set(0, 0, 300)
-camera.up.set(0, 0, 0)
+camera.position.set(-3, -10, 5)
+camera.up.set(0, 0, 1)
 camera.lookAt(0, 0, 0)
 
-export { camera, width as cameraWidth, height as cameraHeight }
+export { camera }

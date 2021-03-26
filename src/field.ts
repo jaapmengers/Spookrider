@@ -23,7 +23,7 @@ function createField(mapWidth: number, mapHeight: number) {
   rightField.lineTo(right, top)
 
   const fieldGeometry = new ExtrudeBufferGeometry([leftField, rightField], {
-    depth: 0.1,
+    depth: 0.3,
     bevelEnabled: false,
   })
 
