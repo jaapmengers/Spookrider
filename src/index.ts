@@ -1,6 +1,9 @@
+import { inRange } from 'lodash'
 import {
   AmbientLight,
+  BoxGeometry,
   DirectionalLight,
+  Mesh,
   Scene,
   Vector3,
   WebGLRenderer,
@@ -75,18 +78,39 @@ function animation() {
 }
 
 function hitDetection() {
-  const lowerX =
-    car.position.x < obstacle.position.x + obstacle.geometry.parameters.width
-  const upperX =
-    car.position.x + car.geometry.parameters.width > obstacle.position.x
-  const lowerZ =
-    car.position.z < obstacle.position.z + obstacle.geometry.parameters.depth
-  const upperZ =
-    car.position.z + car.geometry.parameters.depth > obstacle.position.z
+  return boundsOverlap(getBounds(car), getBounds(obstacle))
+}
 
-  console.log({ lowerX, upperX, lowerZ, upperZ })
+interface Bounds {
+  minX: number
+  maxX: number
+  minZ: number
+  maxZ: number
+}
 
-  return lowerX && upperX && lowerZ && upperZ
+function getBounds(mesh: Mesh<BoxGeometry>): Bounds {
+  const { x: centerX, z: centerZ } = mesh.position
+  const { width, depth } = mesh.geometry.parameters
+  return {
+    minX: centerX - width / 2,
+    maxX: centerX + width / 2,
+    minZ: centerZ - depth / 2,
+    maxZ: centerZ + depth / 2,
+  }
+}
+
+function boundsOverlap(l: Bounds, r: Bounds): boolean {
+  return (
+    rangesOverlap([l.minX, l.maxX], [r.minX, r.maxX]) &&
+    rangesOverlap([l.minZ, l.maxZ], [r.minZ, r.maxZ])
+  )
+}
+
+function rangesOverlap(l: [number, number], r: [number, number]): boolean {
+  const [lMin, lMax] = l
+  const [rMin, rMax] = r
+
+  return inRange(lMin, rMin, rMax) || inRange(lMax, rMin, rMax)
 }
 
 document.body.append(renderer.domElement)
