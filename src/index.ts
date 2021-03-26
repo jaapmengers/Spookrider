@@ -1,4 +1,4 @@
-import { create, inRange, partition } from 'lodash'
+import { partition, range, sample } from 'lodash'
 import {
   AmbientLight,
   BoxGeometry,
@@ -13,6 +13,8 @@ import { Clock } from './clock'
 import './index.css'
 import { createPlane } from './plane'
 import { createField } from './field'
+import { hitDetection } from './hitDetection'
+import { createTree } from './tree'
 
 const scene = new Scene()
 
@@ -22,11 +24,21 @@ const mapHeight = 1000
 scene.add(createPlane(mapWidth, mapHeight))
 scene.add(createField(mapWidth, mapHeight))
 
-const car = createBox(2, 4, 1)
+const car = createBox(2, 4, 1, 0, -5)
 scene.add(car)
 
-const initialObstacleY = 200
+range(0, 50).forEach(() => {
+  const minXPosition = -7
+  const yPosition = -30 + Math.random() * 200
+  const xPosition = sample([1, -1]) * (minXPosition - Math.random() * 5)
 
+  const tree = createTree()
+  tree.position.x = xPosition
+  tree.position.y = yPosition
+  scene.add(tree)
+})
+
+const initialObstacleY = 200
 let obstacles: Mesh<BoxGeometry>[] = []
 
 const ambientLight = new AmbientLight(0xffffff, 0.6)
@@ -76,7 +88,7 @@ const minCarX = -5 + car.geometry.parameters.width / 2
 const maxCarX = -minCarX
 
 function animation() {
-  if (hitDetection()) {
+  if (hitDetection(car, obstacles)) {
     renderer.setAnimationLoop(null)
   }
 
@@ -122,47 +134,6 @@ function deleteOldObstacles() {
 
   toBeRemoved.forEach((obs) => scene.remove(obs))
   obstacles = remaining
-}
-
-function hitDetection() {
-  return obstacles.some((obs) => boundsOverlap(getBounds(car), getBounds(obs)))
-}
-
-interface Bounds {
-  minX: number
-  maxX: number
-  minY: number
-  maxY: number
-}
-
-function getBounds(mesh: Mesh<BoxGeometry>): Bounds {
-  const { x: centerX, y: centerY } = mesh.position
-  const { width, height } = mesh.geometry.parameters
-  return {
-    minX: centerX - width / 2,
-    maxX: centerX + width / 2,
-    minY: centerY - height / 2,
-    maxY: centerY + height / 2,
-  }
-}
-
-function boundsOverlap(l: Bounds, r: Bounds): boolean {
-  return (
-    rangesOverlap([l.minX, l.maxX], [r.minX, r.maxX]) &&
-    rangesOverlap([l.minY, l.maxY], [r.minY, r.maxY])
-  )
-}
-
-function rangesOverlap(l: [number, number], r: [number, number]): boolean {
-  const [lMin, lMax] = l
-  const [rMin, rMax] = r
-
-  return (
-    inRange(lMin, rMin, rMax) ||
-    inRange(lMax, rMin, rMax) ||
-    inRange(rMin, lMin, lMax) ||
-    inRange(rMax, lMin, lMax)
-  )
 }
 
 document.body.append(renderer.domElement)
