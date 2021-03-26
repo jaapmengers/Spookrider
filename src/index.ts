@@ -4,8 +4,9 @@ import {
   BoxGeometry,
   DirectionalLight,
   Mesh,
+  MeshLambertMaterial,
+  PlaneBufferGeometry,
   Scene,
-  Vector3,
   WebGLRenderer,
 } from 'three'
 import { createBox } from './box'
@@ -15,7 +16,17 @@ import './index.css'
 
 const scene = new Scene()
 
-const car = createBox(5, 2, 3)
+const planeGeometry = new PlaneBufferGeometry(
+  window.innerWidth,
+  window.innerHeight
+)
+const planeMaterial = new MeshLambertMaterial({
+  color: 0x666666,
+})
+const plane = new Mesh(planeGeometry, planeMaterial)
+scene.add(plane)
+
+const car = createBox(5, 3, 2)
 scene.add(car)
 
 const initialObstacleX = -30
@@ -28,7 +39,7 @@ const ambientLight = new AmbientLight(0xffffff, 0.6)
 scene.add(ambientLight)
 
 const directionalLight = new DirectionalLight(0xffffff, 0.6)
-directionalLight.position.set(10, 20, 0)
+directionalLight.position.set(0, -10, 40)
 scene.add(directionalLight)
 
 const renderer = new WebGLRenderer()
@@ -36,7 +47,7 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.render(scene, camera)
 
 let gameStarted = false
-let zSpeed = 0
+let ySpeed = 0
 const clock = new Clock()
 
 window.addEventListener('keydown', (event) => {
@@ -47,11 +58,11 @@ window.addEventListener('keydown', (event) => {
   }
 
   if (event.key == 'ArrowLeft') {
-    zSpeed = -1
+    ySpeed = -1
   }
 
   if (event.key == 'ArrowRight') {
-    zSpeed = 1
+    ySpeed = 1
   }
 
   if (event.key.toUpperCase() == 'R') {
@@ -61,7 +72,7 @@ window.addEventListener('keydown', (event) => {
 })
 
 window.addEventListener('keyup', () => {
-  zSpeed = 0
+  ySpeed = 0
 })
 
 function animation() {
@@ -69,11 +80,11 @@ function animation() {
     renderer.setAnimationLoop(null)
   }
 
-  const xMovementPerS = 3
-  const zMovementPerS = 0.1
+  const xMovementPerS = 10
+  const yMovementPerS = 0.1
 
   obstacle.position.x = initialObstacleX + xMovementPerS * clock.getDelta()
-  car.position.z += zSpeed * zMovementPerS
+  car.position.y += ySpeed * yMovementPerS
   renderer.render(scene, camera)
 }
 
@@ -84,25 +95,25 @@ function hitDetection() {
 interface Bounds {
   minX: number
   maxX: number
-  minZ: number
-  maxZ: number
+  minY: number
+  maxY: number
 }
 
 function getBounds(mesh: Mesh<BoxGeometry>): Bounds {
-  const { x: centerX, z: centerZ } = mesh.position
-  const { width, depth } = mesh.geometry.parameters
+  const { x: centerX, y: centerY } = mesh.position
+  const { width, height } = mesh.geometry.parameters
   return {
     minX: centerX - width / 2,
     maxX: centerX + width / 2,
-    minZ: centerZ - depth / 2,
-    maxZ: centerZ + depth / 2,
+    minY: centerY - height / 2,
+    maxY: centerY + height / 2,
   }
 }
 
 function boundsOverlap(l: Bounds, r: Bounds): boolean {
   return (
     rangesOverlap([l.minX, l.maxX], [r.minX, r.maxX]) &&
-    rangesOverlap([l.minZ, l.maxZ], [r.minZ, r.maxZ])
+    rangesOverlap([l.minY, l.maxY], [r.minY, r.maxY])
   )
 }
 
