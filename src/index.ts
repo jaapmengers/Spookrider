@@ -1,38 +1,34 @@
-import { inRange } from 'lodash'
+import { create, inRange } from 'lodash'
 import {
   AmbientLight,
   BoxGeometry,
   DirectionalLight,
   Mesh,
-  MeshLambertMaterial,
-  PlaneBufferGeometry,
   Scene,
   WebGLRenderer,
 } from 'three'
 import { createBox } from './box'
-import { camera } from './camera'
+import { camera, cameraHeight, cameraWidth } from './camera'
 import { Clock } from './clock'
 import './index.css'
+import { createPlane } from './plane'
+import { createField } from './field'
 
 const scene = new Scene()
 
-const planeGeometry = new PlaneBufferGeometry(
-  window.innerWidth,
-  window.innerHeight
-)
-const planeMaterial = new MeshLambertMaterial({
-  color: 0x666666,
-})
-const plane = new Mesh(planeGeometry, planeMaterial)
-scene.add(plane)
+const mapWidth = cameraWidth
+const mapHeight = cameraHeight * 2
 
-const car = createBox(5, 3, 2)
+scene.add(createPlane(mapWidth, mapHeight))
+scene.add(createField(mapWidth, mapHeight))
+
+const car = createBox(3, 5, 2)
 scene.add(car)
 
-const initialObstacleX = -30
+const initialObstacleY = 30
 
 const obstacle = createBox(2, 4, 3)
-obstacle.position.x = initialObstacleX
+obstacle.position.y = initialObstacleY
 scene.add(obstacle)
 
 const ambientLight = new AmbientLight(0xffffff, 0.6)
@@ -47,7 +43,7 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.render(scene, camera)
 
 let gameStarted = false
-let ySpeed = 0
+let xSpeed = 0
 const clock = new Clock()
 
 window.addEventListener('keydown', (event) => {
@@ -58,11 +54,11 @@ window.addEventListener('keydown', (event) => {
   }
 
   if (event.key == 'ArrowLeft') {
-    ySpeed = -1
+    xSpeed = -1
   }
 
   if (event.key == 'ArrowRight') {
-    ySpeed = 1
+    xSpeed = 1
   }
 
   if (event.key.toUpperCase() == 'R') {
@@ -72,7 +68,7 @@ window.addEventListener('keydown', (event) => {
 })
 
 window.addEventListener('keyup', () => {
-  ySpeed = 0
+  xSpeed = 0
 })
 
 function animation() {
@@ -80,11 +76,11 @@ function animation() {
     renderer.setAnimationLoop(null)
   }
 
-  const xMovementPerS = 10
-  const yMovementPerS = 0.1
+  const xMovementPerS = 0.1
+  const yMovementPerS = 10
 
-  obstacle.position.x = initialObstacleX + xMovementPerS * clock.getDelta()
-  car.position.y += ySpeed * yMovementPerS
+  obstacle.position.y = initialObstacleY - yMovementPerS * clock.getDelta()
+  car.position.x += xSpeed * xMovementPerS
   renderer.render(scene, camera)
 }
 
