@@ -1,17 +1,17 @@
 class Clock {
-  private previousTime: number = null
+  private previousTime: number = null;
 
   reset() {
-    this.previousTime = null
+    this.previousTime = null;
   }
 
   getDelta(): number {
-    const newTime = performance.now()
-    const delta = newTime - (this.previousTime ?? 0)
+    const newTime = performance.now();
+    const delta = newTime - (this.previousTime ?? 0);
 
-    this.previousTime = newTime
-    return delta / 1000
+    this.previousTime = newTime;
+    return delta / 1000;
   }
 }
 
-export { Clock }
+export { Clock };
