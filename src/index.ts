@@ -4,7 +4,6 @@ import {
   BoxGeometry,
   Color,
   DirectionalLight,
-  Fog,
   FogExp2,
   Mesh,
   Scene,
@@ -34,10 +33,10 @@ scene.add(createField(mapWidth, mapHeight));
 const car = createBox(2, 4, 1, 0, -5);
 scene.add(car);
 
-const trees = range(0, 50).map(() => {
+const trees = range(0, 110).map((n) => {
   const minXPosition = -7;
-  const yPosition = -30 + Math.random() * 200;
   const xPosition = sample([1, -1]) * (minXPosition - Math.random() * 5);
+  const yPosition = 300 - n * 3;
 
   const tree = createTree();
   tree.position.x = xPosition;
@@ -112,8 +111,13 @@ function animation() {
 
   deleteOldObstacles();
 
-  [...obstacles, ...trees].forEach((obs) => {
+  obstacles.forEach((obs) => {
     obs.position.y -= yMovementPerS * delta;
+  });
+
+  trees.forEach((tree, i) => {
+    const newPosition = tree.position.y - yMovementPerS * delta;
+    tree.position.y = newPosition > -30 ? newPosition : 300;
   });
 
   const newX = car.position.x + xSpeed * xMovementPerS;

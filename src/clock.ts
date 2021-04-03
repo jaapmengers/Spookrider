@@ -7,7 +7,7 @@ class Clock {
 
   getDelta(): number {
     const newTime = performance.now();
-    const delta = newTime - (this.previousTime ?? 0);
+    const delta = !!this.previousTime ? newTime - this.previousTime : 0;
 
     this.previousTime = newTime;
     return delta / 1000;
