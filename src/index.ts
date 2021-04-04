@@ -61,6 +61,7 @@ renderer.render(scene, camera);
 
 let gameStarted = false;
 let xSpeed = 0;
+let score = 0;
 const clock = new Clock();
 
 window.addEventListener('keydown', (event) => {
@@ -91,7 +92,7 @@ window.addEventListener('keyup', () => {
 
 let previousObstacleTime = 0;
 
-const minCarX = -5 + CAR_WIDTH / 2;
+const minCarX = -4.5 + CAR_WIDTH / 2;
 const maxCarX = -minCarX;
 
 const xMovementPerS = 0.3;
@@ -107,9 +108,23 @@ function animation() {
 
   obstacleMovementPerS += delta * speedIncreaseRate;
 
+  const previousPastZero = obstacles
+    .map((y) => y.position.y)
+    .filter((y) => y < 0);
+
   obstacles.forEach((obs) => {
     obs.position.y -= obstacleMovementPerS * delta;
   });
+
+  const currentPastZero = obstacles
+    .map((y) => y.position.y)
+    .filter((y) => y < 0);
+
+  const previousScore = score;
+  score += currentPastZero.length - previousPastZero.length;
+  if (score !== previousScore) {
+    updateScore(score);
+  }
 
   deleteOldObstacles();
 
@@ -152,4 +167,13 @@ function deleteOldObstacles() {
   obstacles = remaining;
 }
 
+const scoreElement = document.createElement('div');
+scoreElement.id = 'score';
+scoreElement.innerText = '0';
+
+function updateScore(score: number) {
+  scoreElement.innerText = `${score}`;
+}
+
 document.body.append(renderer.domElement);
+document.body.append(scoreElement);

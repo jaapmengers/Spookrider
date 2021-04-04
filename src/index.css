@@ -3,3 +3,10 @@ body {
   padding: 0px;
   margin: 0px;
 }
+
+#score {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-family: 'Courier New', Courier, monospace;
+}
