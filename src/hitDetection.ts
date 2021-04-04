@@ -1,7 +1,8 @@
 import { inRange } from 'lodash';
-import { BoxGeometry, Mesh } from 'three';
+import { Group } from 'three';
+import { CAR_HEIGHT, CAR_WIDTH } from './car';
 
-function hitDetection(car: Mesh<BoxGeometry>, obstacles: Mesh<BoxGeometry>[]) {
+function hitDetection(car: Group, obstacles: Group[]) {
   return obstacles.some((obs) => boundsOverlap(getBounds(car), getBounds(obs)));
 }
 
@@ -12,14 +13,13 @@ interface Bounds {
   maxY: number;
 }
 
-function getBounds(mesh: Mesh<BoxGeometry>): Bounds {
-  const { x: centerX, y: centerY } = mesh.position;
-  const { width, height } = mesh.geometry.parameters;
+function getBounds(group: Group): Bounds {
+  const { x: centerX, y: centerY } = group.position;
   return {
-    minX: centerX - width / 2,
-    maxX: centerX + width / 2,
-    minY: centerY - height / 2,
-    maxY: centerY + height / 2,
+    minX: centerX - CAR_WIDTH / 2,
+    maxX: centerX + CAR_WIDTH / 2,
+    minY: centerY - CAR_HEIGHT / 2,
+    maxY: centerY + CAR_HEIGHT / 2,
   };
 }
 

@@ -1,15 +1,14 @@
-import { partition, range, sample } from 'lodash';
+import { last, partition, range, sample } from 'lodash';
 import {
   AmbientLight,
-  BoxGeometry,
   Color,
   DirectionalLight,
   FogExp2,
-  Mesh,
+  Group,
   Scene,
   WebGLRenderer,
 } from 'three';
-import { createBox } from './box';
+import { CAR_WIDTH, createCar } from './car';
 import { camera } from './camera';
 import { Clock } from './clock';
 import './index.css';
@@ -30,7 +29,7 @@ const mapHeight = 1000;
 scene.add(createPlane(mapWidth, mapHeight));
 scene.add(createField(mapWidth, mapHeight));
 
-const car = createBox(2, 4, 1, 0, -5);
+const car = createCar(0xfb8e00);
 scene.add(car);
 
 const trees = range(0, 110).map((n) => {
@@ -47,7 +46,7 @@ const trees = range(0, 110).map((n) => {
 });
 
 const initialObstacleY = 200;
-let obstacles: Mesh<BoxGeometry>[] = [];
+let obstacles: Group[] = [];
 
 const ambientLight = new AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
@@ -92,31 +91,35 @@ window.addEventListener('keyup', () => {
 
 let previousObstacleTime = 0;
 
-const minCarX = -5 + car.geometry.parameters.width / 2;
+const minCarX = -5 + CAR_WIDTH / 2;
 const maxCarX = -minCarX;
+
+const xMovementPerS = 0.3;
+let obstacleMovementPerS = 30;
+const speedIncreaseRate = 0.5;
 
 function animation() {
   if (hitDetection(car, obstacles)) {
     renderer.setAnimationLoop(null);
   }
 
-  if (performance.now() - previousObstacleTime > 1000) {
-    addObstacle();
-  }
-
-  const xMovementPerS = 0.3;
-  const yMovementPerS = 50;
-
   const delta = clock.getDelta();
+
+  obstacleMovementPerS += delta * speedIncreaseRate;
+
+  obstacles.forEach((obs) => {
+    obs.position.y -= obstacleMovementPerS * delta;
+  });
 
   deleteOldObstacles();
 
-  obstacles.forEach((obs) => {
-    obs.position.y -= yMovementPerS * delta;
-  });
+  const lastOstaclePosition = last(obstacles)?.position.y;
+  if (initialObstacleY - lastOstaclePosition > 25) {
+    addObstacle();
+  }
 
-  trees.forEach((tree, i) => {
-    const newPosition = tree.position.y - yMovementPerS * delta;
+  trees.forEach((tree) => {
+    const newPosition = tree.position.y - (obstacleMovementPerS / 2) * delta;
     tree.position.y = newPosition > -30 ? newPosition : 300;
   });
 
@@ -129,11 +132,10 @@ function animation() {
 function addObstacle() {
   previousObstacleTime = performance.now();
 
-  const randomWidth = Math.random() * 3 + 2;
-  const minLeft = -5 + randomWidth / 2;
-  const position = minLeft + randomWidth * Math.random();
+  const position = sample([-1, 0, 1]) * (1.5 * CAR_WIDTH);
+  const obstacle = createCar();
 
-  const obstacle = createBox(randomWidth, 2, 2, position);
+  obstacle.position.x = position;
   obstacle.position.y = initialObstacleY;
   scene.add(obstacle);
 
