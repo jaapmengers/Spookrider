@@ -2,9 +2,13 @@ import { last, partition, range, sample } from 'lodash';
 import {
   AmbientLight,
   Color,
+  CylinderGeometry,
   DirectionalLight,
   FogExp2,
   Group,
+  Mesh,
+  MeshBasicMaterial,
+  MeshLambertMaterial,
   Scene,
   WebGLRenderer,
 } from 'three';
@@ -16,164 +20,86 @@ import { createPlane } from './plane';
 import { createField } from './field';
 import { hitDetection } from './hitDetection';
 import { createTree } from './tree';
+import { addControls } from './controls';
 
 const scene = new Scene();
-scene.background = new Color(0xdddddd);
-
 const color = 0xdddddd;
+
+scene.background = new Color(color);
 scene.fog = new FogExp2(color, 0.02);
-
-const mapWidth = 500;
-const mapHeight = 1000;
-
-scene.add(createPlane(mapWidth, mapHeight));
-scene.add(createField(mapWidth, mapHeight));
-
-const car = createCar(0xfb8e00);
-scene.add(car);
-
-const trees = range(0, 110).map((n) => {
-  const minXPosition = -7;
-  const xPosition = sample([1, -1]) * (minXPosition - Math.random() * 5);
-  const yPosition = 300 - n * 3;
-
-  const tree = createTree();
-  tree.position.x = xPosition;
-  tree.position.y = yPosition;
-  scene.add(tree);
-
-  return tree;
-});
-
-const initialObstacleY = 200;
-let obstacles: Group[] = [];
 
 const ambientLight = new AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 
 const directionalLight = new DirectionalLight(0xffffff, 0.6);
-directionalLight.position.set(0, -10, 40);
+directionalLight.position.set(100, 100, 400);
 scene.add(directionalLight);
 
-const renderer = new WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.render(scene, camera);
+const worldRadius = 1000;
 
-let gameStarted = false;
-let xSpeed = 0;
-let score = 0;
-const clock = new Clock();
+const cylinder = new Mesh(
+  new CylinderGeometry(worldRadius, worldRadius, 10, 320),
+  new MeshLambertMaterial({ color: 0xfffff0 })
+);
+cylinder.rotateZ(Math.PI / 2);
+cylinder.position.z = -worldRadius;
 
-window.addEventListener('keydown', (event) => {
-  if (!gameStarted) {
-    clock.reset();
-    addObstacle();
-    renderer.setAnimationLoop(animation);
-    gameStarted = true;
-  }
+scene.add(cylinder);
 
-  if (event.key == 'ArrowLeft') {
-    xSpeed = -1;
-  }
+// const plane = createPlane(20, 20);
+// scene.add(plane);
 
-  if (event.key == 'ArrowRight') {
-    xSpeed = 1;
-  }
+const car = createCar();
+scene.add(car);
 
-  if (event.key.toUpperCase() == 'R') {
-    renderer.setAnimationLoop(null);
-    gameStarted = false;
-  }
+const stepSize = (Math.PI / 10000) * 2;
+
+const obstacles = range(0, 100).map((x) => {
+  const obstacle = createCar();
+  obstacle.position.x = sample([-3, 0, 3]);
+  scene.add(obstacle);
+
+  const offset = stepSize * x * 100;
+
+  positionObstacle(obstacle, offset);
+
+  return { obstacle, offset };
 });
 
-window.addEventListener('keyup', () => {
-  xSpeed = 0;
-});
+// scene.rotation.z = -0.5;
 
-let previousObstacleTime = 0;
+const xSpeed = 0.5;
 
-const minCarX = -4.5 + CAR_WIDTH / 2;
-const maxCarX = -minCarX;
+addControls(
+  () => {
+    car.position.x -= xSpeed;
+  },
+  () => {
+    car.position.x += xSpeed;
+  }
+);
 
-const xMovementPerS = 0.3;
-let obstacleMovementPerS = 30;
-const speedIncreaseRate = 0.5;
+let position = 0;
+
+function positionObstacle(obstacle: Group, pos: number) {
+  obstacle.position.y = Math.cos(pos) * worldRadius;
+  obstacle.position.z = Math.sin(pos) * worldRadius - worldRadius;
+
+  obstacle.rotation.x = pos - Math.PI / 2;
+}
 
 function animation() {
-  if (hitDetection(car, obstacles)) {
-    renderer.setAnimationLoop(null);
-  }
+  position += stepSize;
 
-  const delta = clock.getDelta();
-
-  obstacleMovementPerS += delta * speedIncreaseRate;
-
-  const previousPastZero = obstacles
-    .map((y) => y.position.y)
-    .filter((y) => y < 0);
-
-  obstacles.forEach((obs) => {
-    obs.position.y -= obstacleMovementPerS * delta;
-  });
-
-  const currentPastZero = obstacles
-    .map((y) => y.position.y)
-    .filter((y) => y < 0);
-
-  const previousScore = score;
-  score += currentPastZero.length - previousPastZero.length;
-  if (score !== previousScore) {
-    updateScore(score);
-  }
-
-  deleteOldObstacles();
-
-  const lastOstaclePosition = last(obstacles)?.position.y;
-  if (initialObstacleY - lastOstaclePosition > 25) {
-    addObstacle();
-  }
-
-  trees.forEach((tree) => {
-    const newPosition = tree.position.y - (obstacleMovementPerS / 2) * delta;
-    tree.position.y = newPosition > -30 ? newPosition : 300;
-  });
-
-  const newX = car.position.x + xSpeed * xMovementPerS;
-  car.position.x = Math.max(Math.min(newX, maxCarX), minCarX);
+  obstacles.forEach((x) => positionObstacle(x.obstacle, position + x.offset));
 
   renderer.render(scene, camera);
 }
 
-function addObstacle() {
-  previousObstacleTime = performance.now();
+const renderer = new WebGLRenderer();
 
-  const position = sample([-1, 0, 1]) * (1.5 * CAR_WIDTH);
-  const obstacle = createCar();
-
-  obstacle.position.x = position;
-  obstacle.position.y = initialObstacleY;
-  scene.add(obstacle);
-
-  obstacles.push(obstacle);
-}
-
-function deleteOldObstacles() {
-  const [toBeRemoved, remaining] = partition(
-    obstacles,
-    (obs) => obs.position.y < -100
-  );
-
-  toBeRemoved.forEach((obs) => scene.remove(obs));
-  obstacles = remaining;
-}
-
-const scoreElement = document.createElement('div');
-scoreElement.id = 'score';
-scoreElement.innerText = '0';
-
-function updateScore(score: number) {
-  scoreElement.innerText = `${score}`;
-}
+renderer.setAnimationLoop(animation);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.render(scene, camera);
 
 document.body.append(renderer.domElement);
-document.body.append(scoreElement);
