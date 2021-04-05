@@ -5,7 +5,6 @@ import {
   CylinderGeometry,
   DirectionalLight,
   Group,
-  MathUtils,
   Mesh,
   MeshLambertMaterial,
   Scene,
@@ -15,7 +14,6 @@ import { createCar } from './car';
 import { camera } from './camera';
 import { Clock } from './clock';
 import './index.css';
-import { hitDetection } from './hitDetection';
 import { addControls } from './controls';
 import { createField } from './field';
 
@@ -75,14 +73,15 @@ function positionGroup(obstacle: Group, pos: number, offsetRadius: number) {
   obstacle.rotation.x = pos - Math.PI / 2;
 }
 
-const obstacleSpeed = 20;
-const carSpeed = 5;
+let obstacleSpeed = 20;
+let carSpeed = 2;
 const clock = new Clock();
 let xSpeed = 0;
 const xSpeedPerS = 20;
 let position = 0;
-
+let started = false;
 let speedUp = 0.1;
+const speedIncrease = 0.1;
 
 function animation() {
   const delta = clock.getDelta();
@@ -97,12 +96,31 @@ function animation() {
 
   const fieldRotation = Math.PI * 2 * (position * carSpeed);
 
+  hitDetection();
+
   leftField.rotation.x = fieldRotation;
   rightField.rotation.x = fieldRotation;
   renderer.render(scene, camera);
 
   if (speedUp < 1) {
     speedUp *= 1 + delta;
+  }
+
+  obstacleSpeed += delta * speedIncrease;
+  carSpeed += delta * speedIncrease;
+}
+
+function hitDetection() {
+  const nearbyObstacle = obstacles.find(
+    (x) => x.obstacle.position.z > -100 && Math.abs(x.obstacle.position.y) < 4.5
+  );
+
+  if (!nearbyObstacle) {
+    return;
+  }
+
+  if (Math.abs(nearbyObstacle.obstacle.position.x - car.position.x) < 2.3) {
+    renderer.setAnimationLoop(null);
   }
 }
 
@@ -121,7 +139,10 @@ addControls(
 );
 
 function start() {
-  renderer.setAnimationLoop(animation);
+  if (!started) {
+    renderer.setAnimationLoop(animation);
+    started = true;
+  }
 }
 
 const renderer = new WebGLRenderer();
