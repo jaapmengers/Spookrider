@@ -1,4 +1,4 @@
-import { last, partition, range, sample } from 'lodash';
+import { range, sample } from 'lodash';
 import {
   AmbientLight,
   Color,
@@ -7,26 +7,23 @@ import {
   FogExp2,
   Group,
   Mesh,
-  MeshBasicMaterial,
   MeshLambertMaterial,
   Scene,
   WebGLRenderer,
 } from 'three';
-import { CAR_WIDTH, createCar } from './car';
+import { createCar } from './car';
 import { camera } from './camera';
 import { Clock } from './clock';
 import './index.css';
-import { createPlane } from './plane';
-import { createField } from './field';
 import { hitDetection } from './hitDetection';
-import { createTree } from './tree';
 import { addControls } from './controls';
+import { createField } from './field';
 
 const scene = new Scene();
-const color = 0xdddddd;
+const gray = 0xdddddd;
 
-scene.background = new Color(color);
-scene.fog = new FogExp2(color, 0.02);
+scene.background = new Color(gray);
+scene.fog = new FogExp2(gray, 0.02);
 
 const ambientLight = new AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
@@ -36,65 +33,84 @@ directionalLight.position.set(100, 100, 400);
 scene.add(directionalLight);
 
 const worldRadius = 1000;
+const fieldRadius = 1000 * 1.0005;
 
 const cylinder = new Mesh(
   new CylinderGeometry(worldRadius, worldRadius, 10, 320),
-  new MeshLambertMaterial({ color: 0xfffff0 })
+  new MeshLambertMaterial({ color: 0x666666 })
 );
 cylinder.rotateZ(Math.PI / 2);
 cylinder.position.z = -worldRadius;
-
 scene.add(cylinder);
 
-// const plane = createPlane(20, 20);
-// scene.add(plane);
+const leftField = createField(-30, fieldRadius);
+const rightField = createField(30, fieldRadius);
+
+leftField.position.z = -worldRadius;
+rightField.position.z = -worldRadius;
+
+scene.add(leftField);
+scene.add(rightField);
 
 const car = createCar();
 scene.add(car);
 
-const stepSize = (Math.PI / 10000) * 2;
+const stepSize = (Math.PI / 1000) * 2;
 
 const obstacles = range(0, 100).map((x) => {
   const obstacle = createCar();
   obstacle.position.x = sample([-3, 0, 3]);
   scene.add(obstacle);
 
-  const offset = stepSize * x * 100;
+  const offset = stepSize * x * 10;
 
-  positionObstacle(obstacle, offset);
+  positionGroup(obstacle, offset, worldRadius);
 
   return { obstacle, offset };
 });
 
-// scene.rotation.z = -0.5;
-
-const xSpeed = 0.5;
-
-addControls(
-  () => {
-    car.position.x -= xSpeed;
-  },
-  () => {
-    car.position.x += xSpeed;
-  }
-);
-
-let position = 0;
-
-function positionObstacle(obstacle: Group, pos: number) {
-  obstacle.position.y = Math.cos(pos) * worldRadius;
-  obstacle.position.z = Math.sin(pos) * worldRadius - worldRadius;
+function positionGroup(obstacle: Group, pos: number, offsetRadius: number) {
+  obstacle.position.y = Math.cos(pos) * offsetRadius;
+  obstacle.position.z = Math.sin(pos) * offsetRadius - offsetRadius;
 
   obstacle.rotation.x = pos - Math.PI / 2;
 }
 
-function animation() {
-  position += stepSize;
+const obstacleSpeed = 10;
+const carSpeed = 5;
+const clock = new Clock();
+let xSpeed = 0;
+const xSpeedPerS = 10;
+let position = 0;
 
-  obstacles.forEach((x) => positionObstacle(x.obstacle, position + x.offset));
+function animation() {
+  const delta = clock.getDelta();
+
+  const newXPosition = car.position.x + xSpeed * delta;
+  car.position.x = Math.min(Math.max(newXPosition, -3), 3);
+
+  position += stepSize * delta;
+  obstacles.forEach((x) =>
+    positionGroup(x.obstacle, position * obstacleSpeed + x.offset, fieldRadius)
+  );
+
+  leftField.rotation.x = position * carSpeed - Math.PI / 2;
+  rightField.rotation.x = position * carSpeed - Math.PI / 2;
 
   renderer.render(scene, camera);
 }
+
+addControls(
+  () => {
+    xSpeed = -xSpeedPerS;
+  },
+  () => {
+    xSpeed = xSpeedPerS;
+  },
+  () => {
+    xSpeed = 0;
+  }
+);
 
 const renderer = new WebGLRenderer();
 

@@ -7,7 +7,7 @@ const camera = new PerspectiveCamera(
   2000
 );
 
-camera.position.set(0, -10, 10);
+camera.position.set(0, -10, 4);
 camera.lookAt(0, 100, 0);
 
 export { camera };

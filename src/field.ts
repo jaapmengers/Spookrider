@@ -1,36 +1,30 @@
-import { ExtrudeBufferGeometry, Mesh, MeshLambertMaterial, Shape } from 'three';
+import { range, sample } from 'lodash';
+import { CylinderGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
+import { createTree } from './tree';
 
-function createField(mapWidth: number, mapHeight: number) {
-  const left = -mapWidth / 2;
-  const top = -mapHeight / 2;
+function createField(xPosition: number, radius: number) {
+  const group = new Group();
+  group.position.x = xPosition;
+  const field = new Mesh(
+    new CylinderGeometry(radius, radius, 50, 320),
+    new MeshLambertMaterial({ color: 0x67c240 })
+  );
+  field.rotateZ(Math.PI / 2);
+  group.add(field);
 
-  const width = mapWidth / 2 - 5;
-  const height = mapHeight;
-  const right = mapWidth / 2 - width;
+  range(0, 1000).forEach((x) => {
+    const tree = createTree();
+    group.add(tree);
 
-  const leftField = new Shape();
-  leftField.moveTo(left, top);
-  leftField.lineTo(left + width, top);
-  leftField.lineTo(left + width, top + height);
-  leftField.lineTo(left, top + height);
-  leftField.lineTo(left, top);
+    tree.position.x = -1 * Math.sign(xPosition) * sample(range(17, 20));
+    const pos = (Math.PI / 500) * x;
 
-  const rightField = new Shape();
-  rightField.moveTo(right, top);
-  rightField.lineTo(right + width, top);
-  rightField.lineTo(right + width, top + height);
-  rightField.lineTo(right, top + height);
-  rightField.lineTo(right, top);
-
-  const fieldGeometry = new ExtrudeBufferGeometry([leftField, rightField], {
-    depth: 0.3,
-    bevelEnabled: false,
+    tree.position.y = Math.cos(pos) * radius;
+    tree.position.z = Math.sin(pos) * radius;
+    tree.rotation.x = pos - Math.PI / 2;
   });
 
-  return new Mesh(fieldGeometry, [
-    new MeshLambertMaterial({ color: 0x67c240 }),
-    new MeshLambertMaterial({ color: 0x233311c }),
-  ]);
+  return group;
 }
 
 export { createField };
