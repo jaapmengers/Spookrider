@@ -4,8 +4,8 @@ import {
   Color,
   CylinderGeometry,
   DirectionalLight,
-  FogExp2,
   Group,
+  MathUtils,
   Mesh,
   MeshLambertMaterial,
   Scene,
@@ -20,10 +20,9 @@ import { addControls } from './controls';
 import { createField } from './field';
 
 const scene = new Scene();
-const gray = 0xdddddd;
+const gray = 0xb5d3e7;
 
 scene.background = new Color(gray);
-scene.fog = new FogExp2(gray, 0.02);
 
 const ambientLight = new AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
@@ -32,8 +31,8 @@ const directionalLight = new DirectionalLight(0xffffff, 0.6);
 directionalLight.position.set(100, 100, 400);
 scene.add(directionalLight);
 
-const worldRadius = 1000;
-const fieldRadius = 1000 * 1.0005;
+const worldRadius = 500;
+const fieldRadius = worldRadius * 1.0005;
 
 const cylinder = new Mesh(
   new CylinderGeometry(worldRadius, worldRadius, 10, 320),
@@ -62,7 +61,7 @@ const obstacles = range(0, 100).map((x) => {
   obstacle.position.x = sample([-3, 0, 3]);
   scene.add(obstacle);
 
-  const offset = stepSize * x * 10;
+  const offset = stepSize * x * 10 + 20;
 
   positionGroup(obstacle, offset, worldRadius);
 
@@ -76,35 +75,44 @@ function positionGroup(obstacle: Group, pos: number, offsetRadius: number) {
   obstacle.rotation.x = pos - Math.PI / 2;
 }
 
-const obstacleSpeed = 10;
+const obstacleSpeed = 20;
 const carSpeed = 5;
 const clock = new Clock();
 let xSpeed = 0;
-const xSpeedPerS = 10;
+const xSpeedPerS = 20;
 let position = 0;
+
+let speedUp = 0.1;
 
 function animation() {
   const delta = clock.getDelta();
 
-  const newXPosition = car.position.x + xSpeed * delta;
+  const newXPosition = car.position.x + xSpeed * delta * speedUp;
   car.position.x = Math.min(Math.max(newXPosition, -3), 3);
 
-  position += stepSize * delta;
+  position = (position + stepSize * delta * speedUp) % 1;
   obstacles.forEach((x) =>
     positionGroup(x.obstacle, position * obstacleSpeed + x.offset, fieldRadius)
   );
 
-  leftField.rotation.x = position * carSpeed - Math.PI / 2;
-  rightField.rotation.x = position * carSpeed - Math.PI / 2;
+  const fieldRotation = Math.PI * 2 * (position * carSpeed);
 
+  leftField.rotation.x = fieldRotation;
+  rightField.rotation.x = fieldRotation;
   renderer.render(scene, camera);
+
+  if (speedUp < 1) {
+    speedUp *= 1 + delta;
+  }
 }
 
 addControls(
   () => {
+    start();
     xSpeed = -xSpeedPerS;
   },
   () => {
+    start();
     xSpeed = xSpeedPerS;
   },
   () => {
@@ -112,9 +120,11 @@ addControls(
   }
 );
 
-const renderer = new WebGLRenderer();
+function start() {
+  renderer.setAnimationLoop(animation);
+}
 
-renderer.setAnimationLoop(animation);
+const renderer = new WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.render(scene, camera);
 
