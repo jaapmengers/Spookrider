@@ -82,6 +82,7 @@ let position = 0;
 let started = false;
 let speedUp = 0.1;
 const speedIncrease = 0.1;
+let score = 0;
 
 function animation() {
   const delta = clock.getDelta();
@@ -110,13 +111,24 @@ function animation() {
   carSpeed += delta * speedIncrease;
 }
 
+let hadVehicleNearby = false;
+
 function hitDetection() {
   const nearbyObstacle = obstacles.find(
     (x) => x.obstacle.position.z > -100 && Math.abs(x.obstacle.position.y) < 4.5
   );
 
   if (!nearbyObstacle) {
+    if (hadVehicleNearby) {
+      updateScore(score + 1);
+      hadVehicleNearby = false;
+    }
+
     return;
+  }
+
+  if (!hadVehicleNearby) {
+    hadVehicleNearby = true;
   }
 
   if (Math.abs(nearbyObstacle.obstacle.position.x - car.position.x) < 2.3) {
@@ -149,4 +161,14 @@ const renderer = new WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.render(scene, camera);
 
+const scoreElement = document.createElement('div');
+scoreElement.id = 'score';
+scoreElement.innerText = '0';
+
+function updateScore(_score: number) {
+  score = _score;
+  scoreElement.innerText = `${_score}`;
+}
+
 document.body.append(renderer.domElement);
+document.body.append(scoreElement);
