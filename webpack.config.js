@@ -23,12 +23,12 @@ module.exports = {
       })
   ],
   devServer: {
-    contentBase: './dist'
+    contentBase: './docs'
   },
   resolve: { extensions: ['.ts', '.js', '.json'] },
   output: {
     filename: 'main.js',
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'docs'),
     clean: true
   },
 };
